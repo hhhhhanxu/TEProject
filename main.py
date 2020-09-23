@@ -1,3 +1,4 @@
+import os
 from PyQt5 import QtCore
 from PyQt5 import QtWidgets
 from qtdesign import Ui_MainWindow
