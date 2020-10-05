@@ -9,12 +9,8 @@ import threading
 from datetime import datetime
 from matplotlib.dates import date2num,MinuteLocator,SecondLocator,DateFormatter
 from scipy import interpolate
+from getData import read_data
 
-X_MINUTES = 1
-Y_MAX = 100
-Y_MIN = 1
-INTERVAL = 1
-MAXCOUNTER = int(X_MINUTES * 60 / INTERVAL)
 
 
 class MplCanvas(FigureCanvas):
@@ -50,8 +46,8 @@ class MplCanvas(FigureCanvas):
             self.ax.xaxis.set_minor_locator(SecondLocator([5, 10, 15, 20, 25]))  # every 10 second is a minor locator
             self.ax.xaxis.set_major_formatter(DateFormatter('%H:%M:%S'))  # tick label formatter
 
-
-        self.curveObj, = self.ax.plot_date(np.array(datax), np.array(datay), 'bo-')
+        self.curveObj, = self.ax.plot(np.array(datax), np.array(datay))
+        self.ax.get_legend().remove()
         # else:
         #     # update data of draw object
         #     self.curveObj.set_data(np.array(datax), np.array(datay))
@@ -62,12 +58,14 @@ class MplCanvas(FigureCanvas):
             tick.set_rotation(25)
 
         self.draw()
+        print(self.title+'画了')
 
 
 
 class MplCanvasWrapper(QWidget):
     def __init__(self, title, valueName,parent=None):
         QWidget.__init__(self, parent)
+        self.Title = title
         self.canvas = MplCanvas(title,valueName)
         self.vbl = QVBoxLayout()
         self.ntb = NavigationToolbar(self.canvas, parent)
@@ -76,26 +74,27 @@ class MplCanvasWrapper(QWidget):
         self.setLayout(self.vbl)
         self.dataX = []
         self.dataY = []
-        self.setWindowTitle('test')
-        self.initDataGenerator()
+        self.setWindowTitle(self.Title)
 
-    def startPlot(self):
-        self.__generating = True
 
-    def pausePlot(self):
-        self.__generating = False
-        pass
+    def run(self,new_data):
+        #new_data = read_data()
+        if new_data == None:
+            pass
+        #这里要有文字说明连接失败
+        else:
+            data = new_data["data"][self.Title]
+            print(self.Title+'获取正常')
+            data = data.values[1:]
 
-    def initDataGenerator(self):
-        self.__generating = False
-        self.__exit = False
-        self.tData = threading.Thread(name="dataGenerator", target=self.generateData)
-        self.tData.start()
+            self.dataX = [x for x in range(len(data))]
+            self.dataY = [float(y) for y in data]
 
-    def releasePlot(self):
-        self.__exit = True
-        self.tData.join()
+            self.canvas.plot(self.dataX, self.dataY)
 
+
+
+#下面暂时不用
     def generateData(self):
         counter = 0
         while (True):
